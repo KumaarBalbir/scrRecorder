@@ -14,6 +14,8 @@ const createWindow = () => {
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: true, // for making node api globally available
+      contextIsolation: false,
+      enableRemoteModule: true, // Enable the remote module
     },
   });
 
