@@ -1,8 +1,12 @@
 const videoSelectBtn = document.getElementById("videoSelectBtn");
+const startBtn = document.getElementById("startBtn");
+const stopBtn = document.getElementById("stopBtn");
+
 videoSelectBtn.onclick = getVideoSources;
 
-const { desktopCapturer, remote } = require("electron");
-const { Menu } = remote;
+const { desktopCapturer, remote } = require("electron"); // remote is for interprocess communication (IPC)
+const { Menu, dialog } = remote;
+const { writeFile } = require("fs");
 
 // Get the available video sources
 async function getVideoSources() {
@@ -53,4 +57,42 @@ async function selectSource(source) {
   // Register Event Handlers
   mediaRecorder.ondataavailable = handleDataAvailable;
   mediaRecorder.onstop = handleStop;
+}
+
+// Record and save a video file
+
+startBtn.onclick = () => {
+  mediaRecorder.start();
+  startBtn.classList.add("is-danger");
+  startBtn.innerText = "Recording";
+};
+
+stopBtn.onclick = (e) => {
+  mediaRecorder.stop();
+  startBtn.classList.remove("is-danger");
+  startBtn.innerText = "Start";
+};
+
+// capture all recorded chunks
+function handleDataAvailable(e) {
+  console.log("video data available");
+  recordedChunks.push(e.data);
+}
+
+// saves the video file on stop
+async function handleStop(e) {
+  const blob = new Blob(recordedChunks, {
+    type: "video/webm; codecs=vp9",
+  });
+  const buffer = Buffer.from(await blob.arrayBuffer());
+  const { filePath } = await dialog.showSaveDialog({
+    buttonLabel: "Save video",
+    defaultPath: `vid-${Date.now()}.webm`,
+  });
+  console.log(filePath);
+  if (filePath) {
+    writeFile(filePath, buffer, () => console.log("video saved successfully"));
+  } else {
+    console.log("user cancelled");
+  }
 }
